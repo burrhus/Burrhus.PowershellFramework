@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     test
 .DESCRIPTION
@@ -30,7 +30,7 @@ param(
 	[string]$DirectRun="", 
 	[string]$UpdateID="",
 	[string]$Addon="",
-	[bool]$ShowDebug=$false
+	[bool]$ShowDebug=$true
 )
 
 # Initialize
@@ -43,8 +43,45 @@ if ($PSScriptRoot -eq $null) {
 	$thisScript = $PSScriptRoot
 }
 $global:root = $thisScript
+$global:configurationXML = $null;
 
 #Load scripts
 . ($thisScript + '\01_Core\Load.ps1')
+ShowMessage "Burrhus.PowerShellFramework" [LogLevels]::Flow $true
+ShowMessage "Version 3.0.0" [LogLevels]::Flow $false
 
-input "TEST" $global:root
+if ($Interactive -and ($UseSetupFile -eq $false)) 
+{
+	$URL = Input "Url for sitecollection?" $URL
+
+	$Environment = Input "Navn på miljøet?" $Environment
+}
+
+if ($Solution -eq "" -or $Solution -eq $null) 
+{
+	$Solution = Input "Navn på løsningen?" $Solution
+}
+
+$global:root = $global:root+"\"+$Solution
+
+LoadEnvironment
+LoadInstall
+
+if ($PSScriptRoot -eq $null) {
+	$thisScript = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
+} else {
+	$thisScript = $PSScriptRoot
+}
+LoadScripts $thisScript
+
+$thisScript = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
+
+ShowMessage $global:root [LogLevels]::Information
+input "TEST" $global:configurationXML.Configuration.SolutionPath
+
+if ($PSScriptRoot -eq $null) {
+	$thisScript = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
+} else {
+	$thisScript = $PSScriptRoot
+}
+UnLoadScripts $thisScript

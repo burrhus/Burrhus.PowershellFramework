@@ -86,3 +86,17 @@ function Get-EnvironmentVar($key, $setupXML)
 	}
 	return $key
 }
+
+function LoadScripts([string] $thisScript)
+{
+    foreach ($initscript in $global:configurationXML.Configuration.InitScripts.Script) {
+        . ($thisScript + '\' + $initscript + '\Load.ps1')
+    }
+}
+
+function UnLoadScripts([string] $thisScript)
+{
+    foreach ($terminateScript in $global:configurationXML.Configuration.TerminateScripts.Script) {
+        . ($thisScript + '\' + $terminateScript + '\UnLoad.ps1')
+    }
+}

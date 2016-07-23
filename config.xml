@@ -1,0 +1,9 @@
+<Configuration>
+<SolutionPath>C:\Dropbox\TFS2\Burrhus.Solutions\Burrhus.PowerShell\Burrhus.PowerShell\Scripts</SolutionPath>
+<InitScripts>
+    <Script>10_SharePoint</Script>
+</InitScripts>
+<TerminateScripts>
+    <Script>10_SharePoint</Script>
+</TerminateScripts>
+</Configuration>

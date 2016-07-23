@@ -69,3 +69,16 @@ function CreateXML([string] $fileName, [string] $rootElement)
 	$oXMLDocument.Save($fileName)
 }
 
+function LoadEnvironment()
+{
+	$setupFile = $global:root + "\Setup" + $Environment + ".xml"
+
+	$global:setupXML = LoadSetupConfig $setupFile
+}
+
+function LoadInstall()
+{
+	$setupFile = $global:root + "\Install.xml"
+
+	$global:installXML = LoadSetupConfig $setupFile	
+}
