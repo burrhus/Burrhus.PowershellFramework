@@ -45,7 +45,6 @@ if ($PSScriptRoot -eq $null) {
 $global:root = $thisScript
 
 #Load scripts
-. ($thisScript + '\..\ps\01_Core\Load.ps1')
+. ($thisScript + '\01_Core\Load.ps1')
 
-read-host $global:root
-read-host "ASDFASDF"
+input "TEST" $global:root
