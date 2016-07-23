@@ -48,3 +48,4 @@ $global:root = $thisScript
 . ($thisScript + '\..\ps\01_Core\Load.ps1')
 
 read-host $global:root
+read-host "ASDFASDF"
