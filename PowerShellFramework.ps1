@@ -73,11 +73,10 @@ if ($PSScriptRoot -eq $null) {
 	$thisScript = $PSScriptRoot
 }
 LoadScripts $thisScript
+. ($thisScript + '\01_Core\Menu.ps1')
 
-$thisScript = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
-
-ShowMessage $global:root [LogLevels]::Information
-input "TEST" $global:configurationXML.Configuration.SolutionPath
+#Vis menu
+ShowMenu
 
 if ($PSScriptRoot -eq $null) {
 	$thisScript = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent

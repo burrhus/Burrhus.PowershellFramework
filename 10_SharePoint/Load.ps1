@@ -17,7 +17,7 @@ function InitializeSharePoint($thisScript){
 	if ($global:setupXML.Setup.SiteType -eq "SPOnline") {
         . ($thisScript + "/Online/Load.ps1")
 	} else {
-		write-host "LoadOnPremise"
+        . ($thisScript + "/OnPremise/Load.ps1")
 	}
 }
 
