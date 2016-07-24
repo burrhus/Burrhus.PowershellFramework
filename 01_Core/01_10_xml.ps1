@@ -74,6 +74,10 @@ function LoadEnvironment()
 	$setupFile = $global:root + "\Setup" + $Environment + ".xml"
 
 	$global:setupXML = LoadSetupConfig $setupFile
+
+	$date = get-date;
+	$global:logPath =  $global:root + "\" +  + $date.Year.ToString("0000") + $date.Month.ToString("00") + $date.Day.ToString("00") + "_" +  + $date.Hour.ToString("00") + $date.Minute.ToString("00")  + $date.Second.ToString("00");
+	md $global:logPath
 }
 
 function LoadInstall()

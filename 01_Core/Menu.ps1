@@ -263,11 +263,20 @@ function RunCommand ($command) {
     ShowMessage $command.Log [LogLevels]::Flow
 
     switch ($command.Function) {
+		# Taxonomier
         "SP-TestTaxonomies" {  
             SP-TestTaxonomies $command
         }
 		"SP-ExportTaxonomies"{
 			SP-ExportTaxonomies $command
+		}
+
+		#SiteColumns
+		"SP-TestSiteColumns" {
+			SP-TestSiteColumns $command
+		}
+		"SP-ExportSiteColumns" {
+			SP-ExportSiteColumns $command
 		}
         Default {
 			read-host $command.Function

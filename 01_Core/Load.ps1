@@ -30,7 +30,7 @@ Add-Type -TypeDefinition @"
 catch
 {}
 
-function ShowMessage([string] $prompt, $logLevel, $continue, $tag) 
+function global:ShowMessage([string] $prompt, $logLevel, $continue, $tag) 
 {
     <#
     <Summary>
