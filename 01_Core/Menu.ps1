@@ -272,6 +272,9 @@ function RunCommand ($command) {
 		"SP-ExportTaxonomies"{
 			SP-ExportTaxonomies $command
 		}
+		"SP-ImportTaxonomies"{
+			SP-ImportTaxonomies $command
+		}
 
 		#SiteColumns
 		"SP-TestSiteColumns" {

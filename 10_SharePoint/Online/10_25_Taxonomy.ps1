@@ -33,8 +33,23 @@ function global:SP-ExportTaxonomies($command) {
 	$global:taxonomyTreeXML | out-file $taxonomyFile 
 }
 
+function global:SP-ImportTaxonomies($command) {
+	$taxXMLFile = [System.IO.Path]::Combine($global:setupXML.Setup.ImportPath, "taxonomy.xml");
+	$taxXML = LoadSetupConfig $taxXMLFile
+
+	if ($taxXML.Taxonomies.TaxonomyGroup.Name.ToString().StartsWith("[")) {
+		$taxGroupName = Get-EnvironmentVar $taxXML.Taxonomies.TaxonomyGroup.Name $global:setupXML
+	} else {
+		$taxGroupName =$taxXML.Taxonomies.TaxonomyGroup.Name
+	}
+
+	SP-CreateTaxonomyGroups $command $taxXML
+	Write-Host $taxGroupName
+	Read-Host $taxXMLFile
+}
+
 <#
-Menufunktioner
+Hjælpefunktioner
 #>
 
 function global:SP-GetTaxonomies($taxonomyGroupDef, $termSetDef, $returnValue)
@@ -42,7 +57,6 @@ function global:SP-GetTaxonomies($taxonomyGroupDef, $termSetDef, $returnValue)
 	$termStore = SP-GetTermStoreInfo $null 
 	SP-GetTaxonomyTree $global:taxonomyTree $termStore
 }
-
 
 function global:SP-GetTermStoreInfo($command)
 {
@@ -169,4 +183,180 @@ function global:SP-GetTerms($termSet, $returnValue)
 	$global:taxonomyTreeXML += "</Terms>"
 	#$returnValue;
 	
+}
+
+function global:SP-CreateTaxonomyGroups($command, $taxXML) {
+	$termStore = SP-GetTermStoreInfo $command
+	ShowMessage $taxXML.Taxonomies.TaxonomyGroup.Name [LogLevels]::Flow
+    foreach($taxonomyGroupDef in $taxXML.Taxonomies.TaxonomyGroup)
+    {
+		$groupName = Get-EnvironmentVar $taxonomyGroupDef.Name $global:setupXML
+		ShowMessage ($groupName + " --- " + $taxonomyGroupDef.Name) [LogLevels]::Flow
+		$group = SP-CreateTaxGroup $taxonomyGroupDef $termStore
+		foreach ($termSetDef in $taxonomyGroupDef.TermSets.TermSet)
+		{
+			$termSet = Create-TermSet $termSetDef $termStore $group 
+			$term = Create-Terms $termSetDef $termStore $termSet
+		}
+	 }
+}
+
+function global:SP-CreateTaxGroup($taxonomyGroupDef, $termStore)
+{
+	$groupName = Get-EnvironmentVar $taxonomyGroupDef.Name $global:setupXML
+	$description = $taxonomyGroupDef.Description;
+
+	ShowMessage ("Processing Group: " + $groupName + "...") [LogLevels]::Information $true
+  
+	$groups = $termStore.Groups;
+	$global:clientContext.Load($groups);
+	$global:clientContext.ExecuteQuery();
+
+	foreach($group in $groups)
+	{
+		if ($group.Name -eq $groupName) 
+		{
+			return $group;
+		}
+	}
+
+	$groupGuid = [System.Guid]::NewGuid()
+	ShowMessage ($groupGuid) [LogLevels]::Debug
+
+	$group = $termStore.CreateGroup($groupName, $groupGuid);
+    $global:clientContext.Load($group);
+    try
+    {
+        $global:clientContext.ExecuteQuery();
+	# 	$group;
+	# 	read-host "TEST"
+	 	return $group;
+        ShowMessage ( "Inserted" ) [LogLevels]::Information
+    }
+    catch
+    {
+        ShowMessage ( "Error creating new Group " + $name + " " + $_.Exception.Message ) [LogLevels]::Error
+        exit 1
+    }
+}
+
+function global:Create-TermSet($termSetDef, $termStore, $group) 
+{
+    $errorOccurred = $false
+	$name = $termSetDef.Name;
+    $description = $termSetDef.Description;
+    $customSortOrder = $termSetDef.CustomSortOrder;
+    ShowMessage ("Processing TermSet " + $name + "... " ) [LogLevels]::Information $true
+    $termSets = $group.TermSets; #GetTermSet($id);
+    $global:clientContext.Load($termSets);
+	$global:clientContext.ExecuteQuery();
+	foreach ($termSet in $termSets)
+	{
+		ShowMessage ($termSet.Name) [LogLevels]::Information $true
+		if ($termSet.Name -eq $name)
+		{
+			return $termSet;
+		}
+	}
+
+
+	$id = [System.Guid]::NewGuid()
+    $termSet = $group.CreateTermSet($name, $id, $termStore.DefaultLanguage);
+    $termSet.Description = $description;
+ 
+    if($customSortOrder -ne $null)
+    {
+        $termSet.CustomSortOrder = $customSortOrder
+    }
+ 
+    $termSet.IsAvailableForTagging = [bool]::Parse($termSetDef.IsAvailableForTagging);
+    $termSet.IsOpenForTermCreation = [bool]::Parse($termSetDef.IsOpenForTermCreation);
+ 
+    if($termSetDef.CustomProperties -ne $null)
+    {
+        foreach($custProp in $termSetDef.CustomProperties.CustomProperty)
+        {
+            $termSet.SetCustomProperty($custProp.Key, $custProp.Value)
+        }
+    }
+  
+    try
+    {
+        $global:clientContext.ExecuteQuery();
+    }
+    catch
+    {
+        ShowMessage ("Error occured while create Term Set" + $name + $_.Exception.Message) [LogLevels]::Error
+        $errorOccurred = $true
+    }
+	ShowMessage ("") [LogLevels]::Information
+	return $termSet;
+}
+
+function global:Create-Terms($termDef, $termStore, $termSet) 
+{
+	foreach ($term in $termDef.Terms.TermSet)
+	{
+		$subTerms = $termSet.Terms
+		$global:clientContext.Load($subTerms);
+		$global:clientContext.ExecuteQuery();
+		$subTerm = Create-Term $term $termStore $termSet $subTerms
+	}
+}
+
+function global:Create-Term($termDef, $termStore, $termSet, $subTerms) 
+{
+	foreach ($subTerm in $subTerms)
+	{
+ 		if ($subTerm.Name -eq $termDef.Name)
+		{
+			Create-Terms $termDef $termStore $subTerm
+			return $subTerm
+		}			
+	}
+
+	$id = [System.Guid]::NewGuid()
+	$subTerm = $termSet.CreateTerm($termDef.Name, $termStore.DefaultLanguage, $id);
+
+	$customSortOrder = $termDef.CustomSortOrder;
+    $description = $termDef.Description;
+    $subTerm.SetDescription($description, $termStore.DefaultLanguage);
+    $subTerm.IsAvailableForTagging = [bool]::Parse($termDef.IsAvailableForTagging);
+ 
+ 
+    if($customSortOrder -ne $null)
+    {
+        $subTerm.CustomSortOrder = $customSortOrder
+    }
+ 
+    if($termDef.CustomProperties -ne $null)
+    {
+        foreach($custProp in $termDef.CustomProperties.CustomProperty)
+        {
+            $subTerm.SetCustomProperty($custProp.Key, $custProp.Value)
+        }
+    }
+ 
+    if($termDef.LocalCustomProperties -ne $null)
+    {
+        foreach($localCustProp in $termDef.LocalCustomProperties.LocalCustomProperty)
+        {
+            $subTerm.SetLocalCustomProperty($localCustProp.Key, $localCustProp.Value)
+        }
+    }
+ 
+    try
+    {
+        $global:clientContext.Load($subTerm);
+        $global:clientContext.ExecuteQuery();
+        ShowMessage ("Created " + $termDef.Name) [LogLevels]::Information
+    }
+    catch
+    {
+        ShowMessage ( "Error occured while create Term" + $name + $_.Exception.Message) [LogLevels]::Error
+        $errorOccurred = $true
+    }
+
+	Create-Terms $termDef $termStore $subTerm $setupXML $installXML $outFile	
+	return $subTerm;
 }

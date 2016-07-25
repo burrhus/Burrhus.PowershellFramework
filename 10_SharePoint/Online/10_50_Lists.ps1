@@ -53,26 +53,26 @@ function global:SP-TestListContents($command) {
 function global:SP-ExportListContents($command) {
     $lists = SP-GetLists $command
     foreach ($listName in $lists.KEYS) {
-        if ($listName -eq "Configuration" -or $listName -eq "Dokumenter") {
+        #if ($listName -eq "Configuration" -or $listName -eq "Dokumenter") {
             ShowMessage ("Exporting " + $listName) [LogLevels]::Flow 
             $listItems = SP-GetListItems $lists[$listName];
             
             $listXML = ConvertListContent2XML $listItems
-            $listFile = [System.IO.Path]::Combine($global:logPath, "Lists")
+            $listFile = [System.IO.Path]::Combine($global:logPath, "Lists", $listName)
             if (-not (Test-Path $listFile)) {
                 md $listFile                 
             }
             foreach ($listItem in $listItems.KEYS) {
-                SP-DownloadAttachments $listItems[$listItem] 
+                SP-DownloadAttachments $listItems[$listItem] $listFile
             }
             
-            $listFile = [System.IO.Path]::Combine($global:logPath, "Lists", $listName + ".xml")
+            $listFile = [System.IO.Path]::Combine($global:logPath, "Lists", $listName, "Export.xml")
             if ($interactive) {
                 $listFile = (Input "Sti til felt fil" $listFile)                
             }
 
             $listXML | out-file  -Encoding "UTF8" $listFile 
-        }
+        #}
     }
 }
 
