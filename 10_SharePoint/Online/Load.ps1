@@ -64,3 +64,5 @@ if ($PSScriptRoot -eq $null) {
 
 . ($thisScript + "\10_25_Taxonomy.ps1")
 . ($thisScript + "\10_30_Fields.ps1")
+. ($thisScript + "\10_50_Lists.ps1")
+. ($thisScript + "\10_55_Files.ps1")

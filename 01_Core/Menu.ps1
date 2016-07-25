@@ -72,7 +72,9 @@ function RunMenuV3($selectedMenu) {
 	if ($blnFound -eq $false) {
 		write-host "Kan ikke finde $selectedMenu"
 	}
-    Read-Host "."
+	if ($interactive) {
+    	Read-Host "DONE"
+	}
 }
 
 function MenuV2
@@ -277,6 +279,14 @@ function RunCommand ($command) {
 		}
 		"SP-ExportSiteColumns" {
 			SP-ExportSiteColumns $command
+		}
+
+		#ListContents
+		"SP-TestListContents" {
+			SP-TestListContents $command
+		}
+		"SP-ExportListContents" {
+			SP-ExportListContents $command
 		}
         Default {
 			read-host $command.Function
