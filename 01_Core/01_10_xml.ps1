@@ -11,7 +11,7 @@
 #>
 ShowMessage "Loading XML Version 3.0.0" [LogLevels]::Information
 
-function LoadSetupConfig([string] $fileName)
+function global:LoadSetupConfig([string] $fileName)
 {
     <#
     <Summary>

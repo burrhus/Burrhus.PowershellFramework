@@ -360,3 +360,38 @@ function global:Create-Term($termDef, $termStore, $termSet, $subTerms)
 	Create-Terms $termDef $termStore $subTerm $setupXML $installXML $outFile	
 	return $subTerm;
 }
+
+#$global:Taxonomies = $null
+function global:SP-GetTaxonomy($taxonomyGroup, $termSet, $term) {
+	if ($global:Taxonomies -eq $null) {
+		ShowMessage "Henter taxonomier" [LogLevels]::Flow
+		SP-GetTaxonomies 
+		$global:Taxonomies = New-Object -TypeName System.Xml.XmlDocument
+    	$global:Taxonomies.LoadXML($global:taxonomyTreeXML);
+	}
+
+	foreach ($taxGroup in $global:Taxonomies.Taxonomies.TaxonomyGroup) {
+		if ($taxGroup.Name -eq $taxonomyGroup) {
+			foreach ($taxTermSet in $taxGroup.TermSets.TermSet) {
+		 		if ($taxTermSet.Name -eq $termSet) {
+		 			return SP-GetTerm $taxTermSet $term
+		 		}
+			}
+		}
+	}
+}
+
+function global:SP-GetTerm($termSet, $term) {
+	$returnValue = $null;
+	foreach ($item in $termSet.Terms.TermSet) {
+		if ($item.Name -eq $term) {
+			return $item
+		}
+		else {
+			$returnValue = SP-GetTerm $item $term
+		}
+		if ($returnValue -ne $null) {
+			return $returnValue;
+		}
+	}
+}

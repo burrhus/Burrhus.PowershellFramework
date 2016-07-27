@@ -268,31 +268,71 @@ function RunCommand ($command) {
 		# Taxonomier
         "SP-TestTaxonomies" {  
             SP-TestTaxonomies $command
+			break;
         }
 		"SP-ExportTaxonomies"{
 			SP-ExportTaxonomies $command
+			break;
 		}
 		"SP-ImportTaxonomies"{
 			SP-ImportTaxonomies $command
+			break;
 		}
 
 		#SiteColumns
 		"SP-TestSiteColumns" {
 			SP-TestSiteColumns $command
+			break;
 		}
 		"SP-ExportSiteColumns" {
 			SP-ExportSiteColumns $command
+			break;
+		}
+		"SP-CreateFields" {
+			SP-CreateFields $command
+			break;
+		}
+		"SP-CreateAdditionalFields" {
+			SP-CreateAdditionalFields $command
+			break;
+		}
+
+		#Lists
+		"SP-CreateLists" {
+			SP-CreateLists $command
+			break;
+		}
+		"SP-EditLists" {
+			SP-EditLists $command
+			break;
+		}
+		"SP-EditListViews" {
+			SP-EditListViews $command
+			break;
 		}
 
 		#ListContents
 		"SP-TestListContents" {
 			SP-TestListContents $command
+			break;
 		}
 		"SP-ExportListContents" {
 			SP-ExportListContents $command
+			break;
+		}
+		"SP-ImportListContents" {
+			SP-ImportListContents $command
+			break;
+		}
+
+		#ContentTypes
+		"SP-CreateContentTypes" {
+			SP-CreateContentTypes $command
+			break;
 		}
         Default {
 			read-host $command.Function
+			break;
 		}
     }
 }
