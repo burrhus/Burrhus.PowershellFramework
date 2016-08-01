@@ -183,6 +183,8 @@ $thisScript = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 . ($thisScript + '\01_10_xml.ps1')
 
 $global:configurationXML = LoadSetupConfig ($global:root + "\config.xml")
-if ($global:configurationXML.Configuration.SolutionPath -ne $null) {
+if ($global:SolutionPath -ne "") {
+	$global:root = $global:SolutionPath;
+} elseif ($global:configurationXML.Configuration.SolutionPath -ne $null) {
 	$global:root = $global:configurationXML.Configuration.SolutionPath;
 }

@@ -30,7 +30,9 @@ param(
 	[string]$DirectRun="", 
 	[string]$UpdateID="",
 	[string]$Addon="",
-	[bool]$ShowDebug=$true
+	[bool]$ShowDebug=$true,
+	[string]$SolutionPath=""
+
 )
 
 # Initialize
@@ -45,6 +47,7 @@ if ($PSScriptRoot -eq $null) {
 $global:root = $thisScript
 $global:configurationXML = $null;
 $Global:ShowDebug = $ShowDebug
+$global:SolutionPath = $SolutionPath
 #Load scripts
 . ($thisScript + '\01_Core\Load.ps1')
 ShowMessage "Burrhus.PowerShellFramework" [LogLevels]::Flow $true
