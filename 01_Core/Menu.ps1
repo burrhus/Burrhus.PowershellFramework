@@ -292,6 +292,10 @@ function RunCommand ($command) {
 			SP-CreateFields $command
 			break;
 		}
+		"SP-UpdateFields" {
+			SP-UpdateFields $command
+			break;
+		}
 		"SP-CreateAdditionalFields" {
 			SP-CreateAdditionalFields $command
 			break;

@@ -100,6 +100,7 @@ function global:SP-ImportListContents($command) {
 			$global:LookupLists.Add($lookupList, (SP-GetListItems $lists[$lookupList]))
 		}	  
 	}
+
 	$counter = 0
 	foreach ($listItem in $importXML.ListItems.ListItem) {
 		ShowMessage "." [LogLevels]::Information $true
@@ -119,7 +120,15 @@ function global:SP-ImportListContents($command) {
 		}
 
 		if ($addElement) {
-			SP-ImportListItem $command $lists[$command.ListName] $listItem $lists
+			if ($command.DocumentLibrary -ne $null) {
+				$root = $lists[$command.ListName].RootFolder
+				$Global:clientContext.Load($root)
+				$Global:clientContext.ExecuteQuery()
+				SP-ImportListDocument $command $lists[$command.ListName] $listItem $lists
+			} else {
+				SP-ImportListItem $command $lists[$command.ListName] $listItem $lists				
+			}
+
 			$counter++;
 
 			if (($counter %= 10) -eq 0) {
@@ -224,9 +233,186 @@ function global:SP-EditListViews ($command)
 <#
 Hjælpefunktioner
 #>
+# function global:SP-ImportListItem($command, $list, $listItemContent, $lists) {
+# 	$itemCreateInfo = new-object Microsoft.SharePoint.Client.ListItemCreationInformation;
+# 	$listItem = $list.AddItem($itemCreateInfo);
+# 	if ($command.Fields -eq $null) {
+# 		write-host "ALLE felter er ikke implementeret endnu"	
+# 	} else {
+# 		foreach ($field in $command.Fields.Field) {
+# 			$value = "";
+# 			$inputField = $null;
+# 			foreach ($fieldContent in $listItemContent.Field) {
+# 				if ($fieldContent.Name -eq $field.Name -or $fieldContent.Name -eq $field.DisplayName) {
+# 					$value = $fieldContent.Value
+# 					$inputField = $fieldContent
+# 				}
+# 			}
+# 			#write-host $field.Name ": " $value
+# 			switch ($inputField.Type) {
+# 				"Microsoft.SharePoint.Client.FieldUrlValue" {
+# 					$value  = New-Object Microsoft.SharePoint.Client.FieldUrlValue
+# 					$value.Url = $inputField.Value.Url;
+# 					$value.Description = $inputField.Description;
+# 					$listItem[$field.Name] = [Microsoft.SharePoint.Client.FieldUrlValue]$value;
+# 					break;			
+# 				}
+# 				"Microsoft.SharePoint.Client.Taxonomy.TaxonomyFieldValueCollection" {
+# 					$taxGroupName = Get-EnvironmentVar $field.TaxGroup $global:setupXML
+
+# 					$value = "";
+# 					foreach ($inputFieldValue in $inputField.Value.Value) {
+# 						$valueXML = (SP-GetTaxonomy $taxGroupName $field.TaxTermSet $inputFieldValue.Label)
+# 						if ($valueXML.Id -ne $null) {
+# 							$value += "-1;#{0}|{1};#" -f $inputFieldValue.Label, $valueXML.Id;						
+# 						}
+# 					}
+
+# 					# write-host $value
+# 					$value= $value.Substring(0,$value.Length-2)
+# 					# $termValues = new-object Microsoft.SharePoint.Client.Taxonomy.TaxonomyFieldValueCollection($global:clientContext, $value, $temaField);
+# 					# $taxfield2 = [Microsoft.SharePoint.Client.ClientContext].GetMethod("CastTo").MakeGenericMethod([Microsoft.SharePoint.Client.Taxonomy.TaxonomyField]).Invoke($global:clientContext, $temaField)
+# 					# $taxfield2.SetFieldValueByValueCollection($fileListItem,$termValues);
+
+# 					$listItem[$field.Name] = $value;
+					
+# 					break;
+# 				}
+# 				"Microsoft.SharePoint.Client.Taxonomy.TaxonomyFieldValue" {
+# 					ShowMessage "Microsoft.SharePoint.Client.Taxonomy.TaxonomyFieldValue er ikke implementeret" [LogLevels]::Warning
+# 				}
+# 				"Microsoft.SharePoint.Client.FieldLookupValue[]" {
+# 					# Write-Host $field.LookupList;
+
+# 					[Microsoft.SharePoint.Client.FieldLookupValue[]]$newvalue = $();
+
+# 					foreach ($inputFieldValue in $inputField.Value.Value) {
+# 						if ($inputFieldValue -ne $null) {
+# 							foreach ($itemKey in $global:LookupLists[$field.LookupList].KEYS) {
+# 								$item = $global:LookupLists[$field.LookupList][$itemKey];
+# 								if ($item -ne $null) {
+# 									if ($item.FieldValues["Title"] -eq $inputFieldValue.LookupValue) {
+# 										$addValue = New-Object Microsoft.SharePoint.Client.FieldLookupValue
+# 										$addValue.LookupId = $item.FieldValues["ID"];
+# 										#$addValue.LookupValue = $item.FieldValues["Title"];
+# 										$newvalue += $addValue;
+# 									}
+									
+# 								}
+# 							}
+
+# 						}
+# 					}
+# 					$listItem[$field.Name] = [Microsoft.SharePoint.Client.FieldLookupValue[]]$newvalue;
+# 					break;
+# 				}
+# 				"Microsoft.SharePoint.Client.FieldLookupValue" {
+# 					# Write-Host $field.LookupList;
+
+# 					[Microsoft.SharePoint.Client.FieldLookupValue[]]$newvalue = $();
+
+# 					$inputFieldValue = $inputField.Value
+# 						if ($inputFieldValue -ne $null) {
+# 							foreach ($itemKey in $global:LookupLists[$field.LookupList].KEYS) {
+# 								$item = $global:LookupLists[$field.LookupList][$itemKey];
+# 								if ($item -ne $null) {
+# 									if ($item.FieldValues["Title"] -eq $inputFieldValue.LookupValue) {
+# 										$addValue = New-Object Microsoft.SharePoint.Client.FieldLookupValue
+# 										$addValue.LookupId = $item.FieldValues["ID"];
+# 										#$addValue.LookupValue = $item.FieldValues["Title"];
+# 										$newvalue += $addValue;
+# 									}
+									
+# 								}
+# 							}
+
+						
+# 					}
+# 					$listItem[$field.Name] = [Microsoft.SharePoint.Client.FieldLookupValue[]]$newvalue;
+# 					break;
+# 				}
+# 				Default {
+# 					if ($value -ne "") {
+# 						$listItem[$field.Name] = $value;						
+# 					}
+# 				}
+# 			}
+
+# 		}
+# 	}
+# 	$listItem.update()
+# 	try {
+# 		$global:clientContext.ExecuteQuery();		
+# 	}
+# 	catch [System.Exception] {
+# 		ErrorHandling
+# 		ShowMessage $listItem["Title"] [LogLevels]::Warning
+# 	}
+# }
+
 function global:SP-ImportListItem($command, $list, $listItemContent, $lists) {
 	$itemCreateInfo = new-object Microsoft.SharePoint.Client.ListItemCreationInformation;
 	$listItem = $list.AddItem($itemCreateInfo);
+	SP-UpdateListItem $command $list $listItem $listItemContent $lists
+}
+
+function global:SP-ImportListDocument($command, $list, $listItemContent, $lists) {
+	$importPath = [System.IO.Path]::Combine($global:setupXML.Setup.ImportPath,  "Lists", $command.ListName, $listItemContent.ID)
+	
+	# setup some convenience variables to keep each line shorter
+	#$path = [System.IO.Path]::Combine($Env:TEMP,"Temp.txt")
+	$mode = [System.IO.FileMode]::Open
+	$access = [System.IO.FileAccess]::Read
+	$sharing = [IO.FileShare]::Read
+
+	$file = get-childItem -path $importPath
+
+	if ($file) {
+		try
+		{
+			$fi = new-object IO.FileInfo($file.FullName);
+		}
+		catch
+		{
+			ShowMessage ("Problemer med filen " + $doc.FileName) [LogLevels]::Error $true "Fil"
+			ShowMessage ("Fejlmeddelelse " + $_.Exception.Message) [LogLevels]::Error $true "Fil"
+			ShowMessage ("Værdi ;" + $file.FullName) [LogLevels]::Error $false "Fil"
+		}
+
+		$fileUrl = "{0}/{1}" -f $list.RootFolder.ServerRelativeUrl, $fi.Name;
+		#ShowMessage ($fileUrl + " " + $file.FullName ) [LogLevels]::Information
+		$spFile = $global:clientContext.Web.GetFileByServerRelativeUrl($fileUrl);
+		$fileListItem = $spFile.ListItemAllFields;
+		$global:clientContext.Load($spFile);
+		$global:clientContext.Load($fileListItem);
+		try	
+		{
+			$global:clientContext.ExecuteQuery();
+		}
+		catch 
+		{
+			$uploadFile = New-Object  IO.FileStream $file.FullName ,$mode #, $access, $sharing
+			try
+			{
+				[Microsoft.SharePoint.Client.File]::SaveBinaryDirect($global:clientContext, $fileUrl, $uploadFile, $true);
+			}
+			catch
+			{
+				[Microsoft.SharePoint.Client.File]::SaveBinaryDirect($global:clientContext, $fileUrl, $uploadFile, $true);
+			}
+			$uploadFile.dispose();
+			$spFile = $global:clientContext.Web.GetFileByServerRelativeUrl($fileUrl);
+			$fileListItem = $spFile.ListItemAllFields;
+			$global:clientContext.Load($spFile);
+			$global:clientContext.Load($fileListItem);
+			$global:clientContext.ExecuteQuery();
+		}
+		
+		SP-UpdateListItem $command $list $fileListItem $listItemContent $lists
+	}
+}
+
+function global:SP-UpdateListItem($command, $list, $listItem, $listItemContent, $lists) {
 	if ($command.Fields -eq $null) {
 		write-host "ALLE felter er ikke implementeret endnu"	
 	} else {
@@ -245,6 +431,7 @@ function global:SP-ImportListItem($command, $list, $listItemContent, $lists) {
 					$value  = New-Object Microsoft.SharePoint.Client.FieldUrlValue
 					$value.Url = $inputField.Value.Url;
 					$value.Description = $inputField.Description;
+					#write-host $field.Name ": " $value
 					$listItem[$field.Name] = [Microsoft.SharePoint.Client.FieldUrlValue]$value;
 					break;			
 				}
@@ -252,7 +439,7 @@ function global:SP-ImportListItem($command, $list, $listItemContent, $lists) {
 					$taxGroupName = Get-EnvironmentVar $field.TaxGroup $global:setupXML
 
 					$value = "";
-					foreach ($inputFieldValue in $inputField.Value.Value) {
+					foreach ($inputFieldValue in $inputField.Value.Value) {						
 						$valueXML = (SP-GetTaxonomy $taxGroupName $field.TaxTermSet $inputFieldValue.Label)
 						if ($valueXML.Id -ne $null) {
 							$value += "-1;#{0}|{1};#" -f $inputFieldValue.Label, $valueXML.Id;						
@@ -260,11 +447,14 @@ function global:SP-ImportListItem($command, $list, $listItemContent, $lists) {
 					}
 
 					# write-host $value
-					$value= $value.Substring(0,$value.Length-2)
+					if ($value.Length -gt 2) {
+						$value= $value.Substring(0,$value.Length-2)						
+					}
 					# $termValues = new-object Microsoft.SharePoint.Client.Taxonomy.TaxonomyFieldValueCollection($global:clientContext, $value, $temaField);
 					# $taxfield2 = [Microsoft.SharePoint.Client.ClientContext].GetMethod("CastTo").MakeGenericMethod([Microsoft.SharePoint.Client.Taxonomy.TaxonomyField]).Invoke($global:clientContext, $temaField)
 					# $taxfield2.SetFieldValueByValueCollection($fileListItem,$termValues);
 
+					#write-host "xxx " $field.Name ": " $value
 					$listItem[$field.Name] = $value;
 					
 					break;
@@ -283,8 +473,10 @@ function global:SP-ImportListItem($command, $list, $listItemContent, $lists) {
 								$item = $global:LookupLists[$field.LookupList][$itemKey];
 								if ($item -ne $null) {
 									if ($item.FieldValues["Title"] -eq $inputFieldValue.LookupValue) {
+										#Write-Host $item.FieldValues["Title"]
 										$addValue = New-Object Microsoft.SharePoint.Client.FieldLookupValue
 										$addValue.LookupId = $item.FieldValues["ID"];
+										#write-host $item.FieldValues["ID"] " " $item.FieldValues["Title"];
 										#$addValue.LookupValue = $item.FieldValues["Title"];
 										$newvalue += $addValue;
 									}
@@ -341,15 +533,6 @@ function global:SP-ImportListItem($command, $list, $listItemContent, $lists) {
 	}
 }
 
-function global:SP-ImportListDocument() {
-	$importPath = $setupXML.Setup.ImportPath+$del.Path
-	# setup some convenience variables to keep each line shorter
-	#$path = [System.IO.Path]::Combine($Env:TEMP,"Temp.txt")
-	$mode = [System.IO.FileMode]::Open
-	$access = [System.IO.FileAccess]::Read
-	$sharing = [IO.FileShare]::Read
-
-}
 function global:ConvertListContent2XML($listItems) {
     $listXML = "<ListItems>`r`n";
 

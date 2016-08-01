@@ -37,7 +37,30 @@ function global:SP-ExportSiteColumns($command) {
 
 function global:SP-CreateFields ($command)
 {
-	ShowMessage "Opretter felter" [LogLevels]::Flow
+	$web = $global:clientContext.Web;
+	$global:clientContext.Load($web)
+	$global:clientContext.executeQuery();
+
+	foreach ($field in $global:installXML.Install.Fields.AddFields.Field)
+	{
+		SP-AddField $web $field $web
+	}
+
+	foreach ($webDef in $global:installXML.Install.Webs.Web) 
+	{
+		$url = Get-EnvironmentVar $webDef.Url $global:setupXML
+		$web = $global:clientContext.Site.OpenWeb($url)
+
+		foreach ($field in $webDef.Fields.AddFields.Field)
+		{
+			SP-AddField $web $field $web
+		}
+	}
+}
+
+function global:SP-UpdateFields ($command)
+{
+	ShowMessage "Opdaterer felter" [LogLevels]::Flow
 	$web = $global:clientContext.Web;
 	$global:clientContext.Load($web)
 	$global:clientContext.executeQuery();
@@ -145,7 +168,7 @@ function global:SP-GetFields($command)
 
 function global:SP-AddField($receiverObject, $fieldDef, $web) {
 	ShowMessage ("Tilføjer " + $fieldDef.Name) [LogLevels]::Debug
-
+	$lists = SP-GetLists
 	$spField = $receiverObject.Fields.GetByInternalNameOrTitle($fieldDef.Name);
 	$global:clientContext.Load($spField)
 	Try
@@ -215,17 +238,18 @@ function global:SP-AddField($receiverObject, $fieldDef, $web) {
 
 	if ($fieldDef.LookupList -ne $null) {
 
-		$info = "Finder lookuplist " + $fieldDef.LookupList;
-		ShowMessage $info [LogLevels]::Debug
+		ShowMessage ("Finder lookuplist " + $fieldDef.LookupList) [LogLevels]::Debug
 
-		$l = $web.Lists.GetByTitle($fieldDef.LookupList)
+		$l = $lists[$fieldDef.LookupList];
 		$listID = $l.ID
-		$global:clientContext.Load($l);
-		$global:clientContext.ExecuteQuery()
+		ShowMessage ("Finder lookuplist " + $listID) [LogLevels]::Debug
 
 		$schemaXML = ([xml]($spfield.SchemaXml));
 		$schemaXML.Field.List = $listID.ToString() 
 		$spfield.SchemaXml = $schemaXML.OuterXml
+
+		ShowMessage ("Finder lookuplist " + $schemaXML.OuterXml) [LogLevels]::Debug
+		
 		$updated = $true;
 	}
 

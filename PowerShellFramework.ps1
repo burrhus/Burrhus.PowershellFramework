@@ -44,7 +44,7 @@ if ($PSScriptRoot -eq $null) {
 }
 $global:root = $thisScript
 $global:configurationXML = $null;
-
+$Global:ShowDebug = $ShowDebug
 #Load scripts
 . ($thisScript + '\01_Core\Load.ps1')
 ShowMessage "Burrhus.PowerShellFramework" [LogLevels]::Flow $true
